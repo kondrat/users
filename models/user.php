@@ -296,8 +296,7 @@ class User extends AppModel {
 		$this->deleteAll(array(
 			$this->alias . '.email_authenticated' => 0,
 			$this->alias . '.email_token_expires <' => date('Y-m-d H:i:s')));
-	}
-}
+    }
 
 
 
