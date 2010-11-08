@@ -3,7 +3,7 @@ class UsersController extends AppController {
 
 	var $name = 'Users';
 	var $helpers = array();
-	var $components = array( 'userReg','kcaptcha');
+	var $components = array( 'Users.userReg','Users.kcaptcha');
 
 	var $paginate = array('limit' => 5);
 	
@@ -14,11 +14,12 @@ class UsersController extends AppController {
   			$this->set('title_for_layout', __('Users data',true) );
   			//allowed actions
   			
-        $this->Auth->allow(  'reg','kcaptcha', 'reset', 'userNameCheck'
+        $this->Auth->allow(  
+        										'reg','logout','kcaptcha', 'reset', 'userNameCheck'
         										//'index','view'
         										//'acoset','aroset','permset','buildAcl'
         										);
-
+				
         parent::beforeFilter(); 
         $this->Auth->autoRedirect = false;
 
@@ -63,9 +64,7 @@ class UsersController extends AppController {
 		   	
 
  	}
-
-//--------------------------------------------------------------------
-//--------------------------------------------------------------------	
+	
 /**
  * User register action
  *
@@ -81,37 +80,20 @@ class UsersController extends AppController {
 			$this->Session->setFlash(__d('users', 'You are already registered and logged in!', true));
 			$this->redirect('/');
 		}
-
-/*
-//to finish
-		if (!empty($this->data)) {
-			$user = $this->User->register($this->data);
-			if ($user !== false) {
-				$this->set('user', $user);
-				$this->_sendVerificationEmail($user[$this->modelClass]['email']);
-				$this->Session->setFlash(__d('users', 'Your account has been created. You should receive an e-mail shortly to authenticate your account. Once validated you will be able to login.', true));
-				$this->redirect(array('action'=> 'login'));
-			} else {
-				unset($this->data[$this->modelClass]['passwd']);
-				unset($this->data[$this->modelClass]['temppassword']);
-				$this->Session->setFlash(__d('users', 'Your account could not be created. Please, try again.', true), 'default', array('class' => 'message warning'));
-			}
-		}
-*/				
+	
 		$stopWord = '';
-		
-
-		
-		
+	
 		if ( !empty($this->data) ) {
-						
+			//prepering data from kcaptch component to check.			
 			$this->data['User']['captcha2'] = $this->Session->read('captcha');
 
-			if ( $this->User->save( $this->data) ) {											
+			$user = $this->User->register($this->data);
+			
+			if ( $user !== false ) {											
 				$a = $this->User->read();
 				$this->Auth->login($a);
-				$this->Session->setFlash(__('New user\'s accout has been created',true), 'default', array('class' => 'flok'));
-				$this->redirect(array('controller' => 'items','action'=>'todo'),null,true);
+				$this->Session->setFlash(__d('users', 'Your account has been created. You should receive an e-mail shortly to authenticate your account.', true),'default', array('class' => 'flok'));
+				$this->redirect('/',null,true);
       } else {
       	
       	$errors = $this->User->invalidFields();
@@ -120,8 +102,8 @@ class UsersController extends AppController {
 					$this->set( 'stopWord', $stopWord );
 				}
 				
-				$this->data['User']['captcha'] = null;
-				$this->Session->setFlash(__('New user\'s accout hasn\'t been created',true) , 'default', array('class' => 'fler') );
+				unset($this->data['User']['captcha']);
+				$this->Session->setFlash(__d('users','New user\'s accout hasn\'t been created',true) , 'default', array('class' => 'fler') );
 			}
 		}
 		
@@ -295,6 +277,60 @@ class UsersController extends AppController {
         $this->redirect( '/',null,true);        
     }
 //--------------------------------------------------------------------	
+
+/**
+ * Reset Password Action
+ *
+ * Handles the trigger of the reset, also takes the token, validates it and let the user enter
+ * a new password.
+ *
+ * @param string $token Token
+ * @param string $user User Data
+ * @return void
+ */
+	public function reset_password($token = null, $user = null) {
+		if (empty($token)) {
+			$admin = false;
+			if ($user) {
+				$this->data = $user;
+				$admin = true;
+			}
+			$this->_sendPasswordReset($admin);
+		} else {
+			$this->__resetPassword($token);
+		}
+	}
+/**
+ * This method allows the user to change his password if the reset token is correct
+ *
+ * @param string $token Token
+ * @return void
+ */
+	private function __resetPassword($token) {
+		$user = $this->User->checkPasswordToken($token);
+		if (empty($user)) {
+			$this->Session->setFlash(__d('users', 'Invalid password reset token, try again.', true));
+			$this->redirect(array('action' => 'reset_password'));
+		}
+
+		if (!empty($this->data)) {
+			if ($this->User->resetPassword(Set::merge($user, $this->data))) {
+				$this->Session->setFlash(__d('users', 'Password changed, you can now login with your new password.', true));
+				$this->redirect($this->Auth->loginAction);
+			}
+		}
+
+		$this->set('token', $token);
+	}	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     function reset() { 
     	
 /* 

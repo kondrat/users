@@ -1,0 +1,364 @@
+/*reg - get started*/
+.ur-signUpNow {
+float:left;
+margin:0.5em 0 0 0;
+}
+.ur-signUpNow a {
+color:gray;
+font-weight:bold;
+font-size:110%;
+padding:0.3em .5em;
+display:block;
+text-decoration:none;
+}
+.ur-signUpNow a:hover {
+color:white;
+background-color:#777;
+
+}
+
+
+/*signUp button in login form*/
+.reg {
+	position: absolute;
+	left: 480px;
+	top: 45px;
+}
+.reg a {
+	-webkit-border-radius: 7px;
+	-moz-border-radius: 7px;
+	border-radius: 7px;
+	display:block;
+	border: 1px solid burlyWood;
+	
+	padding: 3px 10px;
+	text-align:center;
+	
+	font-size: 1.2em;
+	text-decoration:none;
+	font-weight: bold;
+	background-color: #97CD39;
+	color: gray;
+	text-shadow:-1px 1px 0 #eee;
+	background:transparent url(../img/pic/reg.png) repeat-x scroll 0 0;
+
+}
+.reg a:hover {
+	color: gray;
+	text-shadow:-1px 1px 0 #fff;
+	background-position: 0 -5px;
+}
+
+/*quick Login Calss*/
+.autoLogin label {
+	color:gray;
+	font-weight:normal;
+	vertical-align:sub;
+}
+.autoLogin input {
+	margin: 0 3px 0 0;
+}
+
+/*form classes*/
+.ur-formPageReg {
+	float:left;
+	height:450px;
+	width:700px;
+	margin:2em 0 0 0;
+	padding:40px 0 0;
+	position:relative;
+	background:transparent url(../img/pic/card-pad-reg.png) no-repeat scroll 0 top;
+}
+.ur-formPageLog {
+	float:left;
+	height:450px;
+	width:700px;
+	margin:2em 0 0 0;
+	padding:40px 0 0;
+	position:relative;
+	background:transparent url(../img/pic/card-pad-reg.png) no-repeat scroll 0 top;
+}
+
+.ur-formPage {
+	float:left;
+	height:1%;
+	margin:2em 0 0 0;
+	padding:10px 0;
+	position:relative;
+	background:transparent url(../img/pic/form_bg.png) repeat-x scroll 0 bottom;
+}
+
+
+
+#UserUsername, #UserPassword, #UserPassword1, #UserPassword2,#UserEmail,#UserEmailReset {
+	width: 200px;
+	margin: 0 0 5px;
+	padding: 5px;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	float:left;
+}
+
+
+
+.inputFormWrap{
+	margin: 0;
+	padding: 0 0 1em 0;
+	position:relative;
+	height:1%;
+	float:left;
+	width:662px;
+}
+div.formWrapLabel{
+	float:left;
+	width:165px;
+	margin: 0.1em 10px 0 0;
+	text-align: right;
+	color:gray;
+	display:block;
+}
+div.formWrapLabel label{
+	font-weight:normal;
+	font-size:15px;
+}
+div.formWrapIn{
+	float:left;
+	margin-top:1px;
+	width:217px;
+}
+div.formWrapTip{	
+	float:left;
+	width:265px;
+}
+div.formWrapTip div{
+	-moz-border-radius:5px;
+	min-height:27px;
+	padding: 2px 0 0 4px;
+}
+div.formWrapTip div img{
+	margin-right: 3px;
+}
+
+/*
+div.activeFormTip{
+	border:1px solid #eee;
+	color:gray;
+	background-color:Cornsilk;
+}
+*/
+
+/*error block*/
+
+
+.error-message {
+	color:#8A1F11;
+	font-weight:bold;
+}
+
+div.error {
+	border:none;
+	background:none;
+}
+
+
+div.inputFormWrap input.form-error {
+	background-color: #eee;
+}
+
+/*error block*/
+
+
+#rNameCheck{
+}
+span.markCheck{
+	background: transparent url("../img/icons/ajax-loader1.gif") no-repeat scroll;
+	height:16px;
+	width:16px;
+	display:block;
+	float:left;
+	margin-right:4px;
+}
+#rNameError{
+}
+#rNameOk{
+}
+
+.rTip{
+	border:1px solid #eee;
+	color:gray;
+	background-color:Cornsilk;	
+}
+.rCheck{
+	border:1px solid transparent;
+	color:gray;
+}
+.rError{
+	background-color:#FBE3E4;
+	color:#8A1F11;	
+	border:1px solid #FBC2C4
+}
+.rOk{
+	border:1px solid transparent;
+}
+.rOk span.mark{
+	background-position: 0 -60px;
+}
+span.mark{
+	background: transparent url("../img/icons/check_marks.png") no-repeat scroll;	
+	height:16px;
+	width:16px;
+	display:block;
+	float:left;
+	margin-right:4px;
+}
+.weakPass{
+	color: #80461B;
+	border-color:#E5BDA3;
+	background-color:#FFE2CF;
+}
+.weakPass span.mark{
+	background-position: 0 0;	
+}
+.goodPass{
+	color:#80621B;
+}
+.goodPass span.mark{
+	background-position: 0 -20px;
+}
+.strongPass{
+	color:#78801B;
+}
+.strongPass span.mark{
+	background-position: 0 -40px;
+}
+.bestPass{
+	color:#2A801B;
+}
+.bestPass span.mark{
+	background-position: 0 -60px;
+}
+.notOkPass{
+	color: gray;
+	border-color:#DBDBDB;
+	background-color:#F2F2F2;
+}
+.notOkPass span.mark{
+	background-position: 0 -80px;
+}
+
+
+
+
+
+
+
+.greenMessage{
+	margin: 0 0 0 12em;
+	padding: 0;
+	height: 15px;
+}
+
+
+
+
+
+
+
+
+
+/*login*/
+
+.signup {
+	z-index: 10;
+	border: 1px solid #ccc;
+	background-color: #efe;	
+	margin: 20px 0 0 0;
+	background-color: #4A4A4A;
+	border: 7px solid #ccc;
+	/*opacity: 0.8;*/
+	/*filter:progid:DXImageTransform.Microsoft.Alpha(opacity=80);*/
+	cursor: move; 
+	height: 70px;
+}
+.innerSignup {
+	background-color:#000000;
+	padding:10px 10px 10px 10px;
+	text-align:center;
+}
+.innerSignup a{
+	/*color:#FF8080;*/
+	color:red;
+	font-weight: bold;
+	text-align: center;
+	text-decoration:none;
+}
+
+.innerSignup a:hover{
+	color:red;
+	text-decoration:underline;
+}  
+
+#UserCaptcha {
+	width: 120px;	
+	margin:0;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	padding:5px;
+}
+
+.capReset {
+	position:relative;
+}
+.capReset img {
+	position:absolute;
+	top:2px;
+}
+.capReset span {
+	cursor:pointer;
+	border-bottom:1px dashed;
+	margin-left:18px;
+}
+
+#capImg {
+	cursor: pointer;
+}
+.capPlace {
+	background-color: #eee;
+	border: 1px solid #ccc;
+	width: 142px;
+	height: 60px;
+	float: left;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	padding:2px;
+}
+#logSubmit, #regSubmit {
+	padding: 0 1.3em;
+}
+
+/*flash message*/
+#flashMessage {
+	border-bottom:2px solid #ddd;
+	background-color:bisque;
+	font-size:12pt;
+	font-weight:bold;
+	line-height:2.5em;
+	margin:0px 0 0;
+	overflow:hidden;
+	position:absolute;
+	text-align:center;
+	width:100%;
+	z-index:100;
+	height:0;
+}
+div.fler {
+	color:red;
+}
+div.flok {
+	color:green;
+}
+.ur-fl {	
+	z-index:100;	
+	position:relative;
+}
+
