@@ -1,29 +1,57 @@
 <?php
+/**
+ * Users Users Controller
+ *
+ * @package users
+ * @subpackage users.controllers
+ */
 class UsersController extends AppController {
 
-	var $name = 'Users';
-	var $helpers = array();
-	var $components = array( 'Users.userReg','Users.kcaptcha');
+/**
+ * Controller name
+ *
+ * @var string
+ */
+	public $name = 'Users';
+/**
+ * Helpers
+ *
+ * @var array
+ */
+	public $helpers = array();
+/**
+ * Components
+ *
+ * @var array
+ */
+	public $components = array( 'Users.kcaptcha');
 
-	var $paginate = array('limit' => 5);
+/**
+ * $paginate
+ *
+ * @var array $paginate
+ */
+	public $paginate = array('limit' => 5);
 	
-//--------------------------------------------------------------------
-//--------------------------------------------------------------------	
-  function beforeFilter() {
+/**
+ * beforeFilter callback
+ *
+ * @return void
+ */	
+  public function beforeFilter() {
   			//default title
   			$this->set('title_for_layout', __('Users data',true) );
-  			//allowed actions
-  			
+
+  			parent::beforeFilter();
         $this->Auth->allow(  
-        										'reg','logout','kcaptcha', 'reset', 'userNameCheck'
+        										'reg','logout','kcaptcha', 'reset_password', 'userNameCheck'
         										//'index','view'
         										//'acoset','aroset','permset','buildAcl'
-        										);
-				
-        parent::beforeFilter(); 
+        										);         
         $this->Auth->autoRedirect = false;
-
+				$this->Auth->loginError ="test mess";
 			
+				$this->set('model', $this->modelClass);
  
 		 		if( $this->action == 'login' && !empty($this->data) ) {
 		 				$data = $this->data;	
@@ -35,7 +63,7 @@ class UsersController extends AppController {
 						}
 						
 						
-						if($this->referer() === '/' || $this->referer() === 'items/index'){
+						if($this->referer() === '/' || $this->referer() === 'cards/index'){
  
 							if (!isset($data['_Token']) || !isset($data['_Token']['fields']) || !isset($data['_Token']['key'])) {
 						 		return false;
@@ -46,11 +74,8 @@ class UsersController extends AppController {
 						 		if ($tokenData['expires'] < time() || $tokenData['key'] !== $token) {
 						 			return false;
 						 		}
-							}						
-					
-							$this->Security->validatePost = false;						
-						}
-									
+							}										
+						}								
 				}       
 
 
@@ -64,7 +89,116 @@ class UsersController extends AppController {
 		   	
 
  	}
-	
+
+/**
+ * ajax staff
+ *
+ */	
+
+	public function userNameCheck() {
+
+			$contents = array();
+			$token = '';
+			$type = '';
+			$errors = array();
+			$toCheck = '';
+			
+			Configure::write('debug', 0);
+			$this->autoLayout = false;
+			$this->autoRender = false;
+			
+			if ( $this->RequestHandler->isAjax() ){
+
+				if (strpos(env('HTTP_REFERER'), trim(env('HTTP_HOST'), '/')) === false) {
+					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
+				}
+
+
+				if( !isset($this->data['_Token']['key']) || ( $this->data['_Token']['key'] !== $this->params['_Token']['key'] )  ) {
+					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
+				}
+				
+				
+			
+				//don't foreget about santization and trimm
+				if( isset($this->data['User']['username']) && $this->data['User']['username'] != null ) {
+					$type = 'username';
+				} else if( isset($this->data['User']['email']) && $this->data['User']['email'] != null ) {
+					$type = 'email';
+				} else {
+					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
+				}
+				
+				
+
+				$this->User->set( $this->data );
+						
+
+				$errors = $this->User->invalidFields();
+
+										
+				if( !isset($errors[$type]) ) {
+						$contents['stat'] = 1;							
+				} else {
+						$contents['stat'] = 0;
+						$contents['error'] = $errors[$type];
+
+						if( $type === 'username' && isset($errors[$type]['stopWords']) ) {
+							$contents['stW'] = $this->_stopWordsCheck( $this->data['User']['username'] );
+						} 
+				}
+
+	      $contents = json_encode($contents);
+				$this->header('Content-Type: application/json');				
+				return ($contents);			
+			
+			
+			
+			} else {				
+				$this->Security->blackHoleCallback = '_gotov';	
+				$this->Security->blackHole($this, 'You are not authorized to process this request!');			
+			}
+		
+	}
+
+/**
+ * blackhole redirection
+ *
+ * @return void
+ */	
+	private function _gotov() {
+					$this->redirect(null, 404, true);
+	}	
+
+/**
+ * stopWords checking
+ *
+ * @return void
+ */
+	private function _stopWordsCheck($username = null ) {					
+					$toCheck = strtolower($username);				
+					if ( $a = Configure::read('stopWords') ){					
+						foreach( $a as $k => $v ) {
+							$res = str_replace($v, "", $toCheck ); 
+							if( $res !== $toCheck ){
+								return $v;
+							}
+						}
+					}
+					return false;			
+	}
+				
+
+/**
+ * kcaptcha stuff
+ *
+ * @return void
+ */
+	public function kcaptcha() {
+  	$this->kcaptcha->render(); 
+  } 
+
+
 /**
  * User register action
  *
@@ -109,107 +243,16 @@ class UsersController extends AppController {
 		
 
 	}	
-//--------------------------------------------------------------------	
-//ajax staff
 
-	//----------------------------------------------------------------
-		function userNameCheck() {
-
-			$contents = array();
-			$token = '';
-			$type = '';
-			$errors = array();
-			$toCheck = '';
-			
-			Configure::write('debug', 0);
-			$this->autoLayout = false;
-			$this->autoRender = false;
-			
-			if ( $this->RequestHandler->isAjax() ){
-
-				if (strpos(env('HTTP_REFERER'), trim(env('HTTP_HOST'), '/')) === false) {
-					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
-				}
+/**
+ * Common login action
+ *
+ * @return void
+ */
 
 
-				if( !isset($this->data['_Token']['key']) || ( $this->data['_Token']['key'] !== $this->params['_Token']['key'] )  ) {
-					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
-				}
+	public function login() {
 				
-				
-			
-				//don't foreget about santization and trimm
-				if( isset($this->data['User']['username']) && $this->data['User']['username'] != null ) {
-					$type = 'username';
-				} else if( isset($this->data['User']['email']) && $this->data['User']['email'] != null ) {
-					$type = 'email';
-				} else {
-					$this->Security->blackHole($this, 'Invalid referrer detected for this request!');
-				}
-				
-				
-
-						$this->User->set( $this->data );
-						
-
-						$errors = $this->User->invalidFields();
-
-										
-						if( !isset($errors[$type]) ) {
-							$contents['stat'] = 1;
-							
-						} else {
-							$contents['stat'] = 0;
-							$contents['error'] = $errors[$type];
-
-							if( $type === 'username' && isset($errors[$type]['stopWords']) ) {
-								$contents['stW'] = $this->_stopWordsCheck( $this->data['User']['username'] );
-							} 
-						}
-
-
-
-
-	      $contents = json_encode($contents);
-				$this->header('Content-Type: application/json');				
-				return ($contents);			
-			
-			
-			
-			} else {				
-				$this->Security->blackHoleCallback = 'gotov';	
-				$this->Security->blackHole($this, 'You are not authorized to process this request!');			
-			}
-		
-		}
-				//blackhole redirection
-				//-----------------------------
-				function gotov() {
-					$this->redirect(null, 404, true);
-				}	
-				//stopWords checking
-				//----------------------------
-				function _stopWordsCheck($username = null ) {					
-					$toCheck = strtolower($username);				
-					if ( $a = Configure::read('stopWords') ){					
-						foreach( $a as $k => $v ) {
-							$res = str_replace($v, "", $toCheck ); 
-							if( $res !== $toCheck ){
-								return $v;
-							}
-						}
-					}
-					return false;			
-				}
-				
-		//kcaptcha stuff
-		//----------------------------------------------------------------
-    function kcaptcha() {
-        $this->kcaptcha->render(); 
-    } 
-
-//--------------------------------------------------------------------
-	function login() {		
 		$user = array();
 		$this->set('title_for_layout', __('Login',true) );
 		$this->set('menuType', 'login');
@@ -223,10 +266,9 @@ class UsersController extends AppController {
 				$this->Auth->loginRedirect = '/';
 			}
 
-			$this->Session->setFlash(sprintf(__d('users', '%s you have successfully logged in', true), $this->Auth->user('username')));
+			$this->Session->setFlash(sprintf(__d('users', '%s you u have successfully logged in', true), $this->Auth->user('username')));
 			if (!empty($this->data)) {
 				$data = $this->data[$this->modelClass];
-				//$this->_setCookie();
 			}
 
 			if (empty($data['return_to'])) {
@@ -243,40 +285,25 @@ class UsersController extends AppController {
 		
 		
 		if( !empty($this->data) ) {
-										
-			if( $this->Auth->login($this->data) ) {
-						$this->redirect( $this->Auth->redirect() );			
-			} else {
+			if( !$this->Auth->login($this->data) ) {
 				$this->data['User']['password'] = null;
-				$this->Session->setFlash(__('Check your login and password',true),'default', array('class' => 'fler'));
-			}
-			
-		} else {
-
-			if( !is_null( $this->Session->read('Auth.User.username') ) && $this->Session->read('Auth.User.group_id') != 2 ){
-				$this->redirect( $this->Auth->redirect() );			
-			} 
+				$this->Session->setFlash(__d('users','Check your login and password',true),'default', array('class' => 'fler'));
+			}			
 		}
-	
-	
 		
 	}
 
-//--------------------------------------------------------------------	
-    function logout() { 
-    		$guest =  false;   	    	
-    		$tempUserName = __('Good bay, ',true).$this->Session->read('Auth.User.username'); 
-    		if( $this->Session->read('Auth.User.group_id') == 2 ) {
-    			$guest =  true;
-    		}
-    			
+/**
+ * Common logout action
+ *
+ * @return void
+ */	
+	public function logout() {    	    	
+    		$tempUserName = sprintf(__d('users', 'Good bay, %s',true),$this->Auth->user('username')); 			
         $this->Auth->logout();
-        if (!$guest) {
-        	$this->Session->setFlash( $tempUserName, 'default', array('class' => 'flok') );
-        }
-        $this->redirect( '/',null,true);        
-    }
-//--------------------------------------------------------------------	
+        $this->Session->setFlash( $tempUserName, 'default', array('class' => 'flok') );
+        $this->redirect('/');        
+  }	
 
 /**
  * Reset Password Action
@@ -299,6 +326,59 @@ class UsersController extends AppController {
 		} else {
 			$this->__resetPassword($token);
 		}
+	}
+/**
+ * Checks if the email is in the system and authenticated, if yes create the token
+ * save it and send the user an email
+ *
+ * @param boolean $admin Admin boolean
+ * @param array $options Options
+ * @return void
+ */
+	protected function _sendPasswordReset($admin = null, $options = array()) {
+		$defaults = array(
+			'from' => 'noreply@' . env('HTTP_HOST'),
+			'subject' => __d('users', 'Password Reset', true),
+			'template' => 'password_reset_request');
+
+		$options = array_merge($defaults, $options);
+
+		if (!empty($this->data)) {
+			$user = $this->User->passwordReset($this->data);
+			if (!empty($user)) {
+				$this->set('token', $user[$this->modelClass]['password_token']);
+				$this->Email->to = $user[$this->modelClass]['email'];
+				$this->Email->from = $options['from'];
+				$this->Email->subject = $options['subject'];
+				$this->Email->template = $options['template'];
+
+			 /* SMTP Options */
+			 
+			   $this->Email->smtpOptions = array(
+			        'port'=>'25',
+			        'timeout'=>'30',
+			        'host' => 'r1',
+			        'username'=>'akv',
+			        'password'=>'Qaz1234'
+			   );     	
+        $this->Email->delivery = 'smtp';        
+    		$this->set('smtp-errors', $this->Email->smtpError);              
+       	//$this->Email->delivery = 'debug';
+				$this->Email->send();
+				
+				if ($admin) {
+					$this->Session->setFlash(sprintf(__d('users', '%s has been sent an email with instruction to reset their password.', true),$user[$this->modelClass]['email']));
+					$this->redirect(array('action' => 'index', 'admin' => true));
+				} else {
+					$this->Session->setFlash(__d('users', 'You should receive an email with further instructions shortly', true));
+					$this->redirect(array('action' => 'login'));
+				}
+			} else {
+				$this->Session->setFlash(__d('users', 'No user was found with that email.', true));
+				$this->redirect('/');
+			}
+		}
+		$this->render('request_password_change');
 	}
 /**
  * This method allows the user to change his password if the reset token is correct
@@ -324,110 +404,16 @@ class UsersController extends AppController {
 	}	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-    function reset() { 
-    	
-/* 
-$to      = '4116457@mail.ru';
-$subject = 'the subject';
-$message = 'hello';
-$headers = 'From: mail.tehnoavia.ru' . "\r\n" .
-    'Reply-To: mail.tehnoavia.ru' . "\r\n" .
-    'X-Mailer: PHP/' . phpversion();
-
-mail($to, $subject, $message, $headers);
-*/
-   	
-    	
-    	if( empty($this->data) ) {
-    		return;    		
-    	}
-
-		// Check email is correct
-		$user = $this->User->find( 'first', array( 'conditions' => array('User.email' => $this->data['User']['email'] ), 'fields' => array('id', 'username', 'email'), 'contain' => false ) ) ;
-
-		if(!$user) {
-			$this->User->invalidate('email', 'Этот E-mail не зарегистрирован' );
-			return;
-		}
-		
-		// Generate new password
-		$password = $this->userReg->createPassword();
-		//debug ($user);
-		$data['User']['password'] = $this->Auth->password($password);
-		$this->User->id = $user['User']['id'];
-		if(!$this->User->saveField('password', $this->Auth->password($password) ) ) {
-			return;
-		}
-		
-			// Send email
-			if(!$this->__sendNewPasswordEmail( $user, $password) ) {
-				$this->Session->setFlash('Ошибка при отправке Email','default', array('class'=>'fler'));
-			}
-			else {
-				$this->flash('Новый пароль выслан на  '.$user['User']['email'].'. Please login', '/users/login', 10);
-			}
-			
-					      
-    }
-    
-    /**
-     * Send out an password reset email to the user email
-     * 	@param Array $user User's details.
-     *  @param Int $password new password.
-     *  @return Boolean indicates success
-    */
-    function __sendNewPasswordEmail($user, $password) {
-
-
-        // Set data for the "view" of the Email
-        $this->set('password', $password );
-        $this->set( 'username', $user['User']['username'] );
-      
-        //$this->Email->to = $user['User']['username'].'<'.$user['User']['email'].'>';
-        //$this->Email->to = $user['User']['username'].' <akv@tehnoavia.ru>';
-        $this->Email->to = $user['User']['username'].' <pom01@mail.ru>';
-        //$this->Email->to = 'Alexey Kondratyev <alexey.kondratyev@gmail.com>';
-        $this->Email->subject = env('SERVER_NAME') . ' - New password';
-        //$this->Email->from = 'Best preson <noreply@'. env('SERVER_NAME').'>';
-        //$this->Email->from = 'quoondo <quoondo@gmail.com>';
-       	$this->Email->from = 'ak ak <akv@tehnoavia.ru>';
-        $this->Email->template = 'user_password_reset';
-        $this->Email->sendAs = 'text';   // you probably want to use both :) 
- 
-			 /* SMTP Options */
-			 
-			   $this->Email->smtpOptions = array(
-			        'port'=>'25',
-			        //'port'=>'465',
-			        'timeout'=>'30',
-			        'host' => 'r1',
-			        //'host' => 'ssl://smtp.gmail.com',
-			        'username'=>'akv',
-			        //'username'=>'quoondo@gmail.com',
-			        'password'=>'Qaz1234',
-			        //'password'=>'Kondrat01',
-			   );
-       	
-       	
-        $this->Email->delivery = 'smtp';
-        
-    		$this->set('smtp-errors', $this->Email->smtpError);
-               
-       	//$this->Email->delivery = 'debug'; 
-        return $this->Email->send();
-    		 
-
-
-	}     
+	    
 //--------------------------------------------------------------------	
 
+
+
+/**
+ * user management part.
+ *
+ * Not done yet.
+ */	
 
 	function index() {
 		$this->User->recursive = 0;

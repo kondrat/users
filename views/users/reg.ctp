@@ -35,7 +35,11 @@
 																  'notEmpty' => __('This field cannot be left blank',true),
 																	'alphanumeric' => __('Only alphabets and numbers allowed', true),
 																	'equalCaptcha' => __('Please, correct the code.',true),
-										  				)	
+										  				),
+										  				'tos' => array(
+										  						'custom' => __d('users', 'You must verify you have read the Terms of Service', true)
+										  				)
+	
 									    		);					
 
 
@@ -243,9 +247,23 @@
 									<?php __('Please, correct the code.')?>
 								</div>
 							</div>
-						
+
+											
 					</div>
 					
+					<div class="inputFormWrap">
+
+							<div id="reg_tos" class="formWrapIn" style="text-align:right;">
+								<?php echo $this->Form->input('tos', array('label' => false ) );?>
+							</div>
+							<div class="">
+								<?php echo $form->label('User', __d('users', 'I have read and agreed to ', true) . $this->Html->link(__d('users', 'Terms of Service', true), array('controller' => 'pages', 'action' => 'tos'))  );?>
+							</div>							
+									<div id="reg_tosError" class="rError <?php echo $errEmailClass;?>">
+										<?php echo $form->error('tos', $errors['tos'],array('wrap'=>null));?>
+									</div>							
+	
+					</div>
 					<div class="" style="float:left;margin:0 0 1.5em 175px;">			
 								<span><?php echo $form->button( __('Submit',true), array('type'=>'submit', 'id'=>'regSubmit') ); ?></span>
 					</div>

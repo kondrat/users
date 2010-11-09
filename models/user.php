@@ -130,6 +130,7 @@ class User extends AppModel {
     															),
 
 											),
+							'tos' => array('rule' => array('custom','[1]'))
 
 																										 
 						  );
@@ -153,7 +154,7 @@ class User extends AppModel {
       		$valid = $this->isUnique(array($fieldName => $data));
      	}
         return $valid;
-   }
+  }
 /**
  * Custom validation method to ensure that password not equal username
  *
@@ -190,13 +191,12 @@ class User extends AppModel {
  * @return boolean Success
  */
 	public function confirmPassword($password = null) {
-		if ((isset($this->data[$this->alias]['password1']) && isset($password['password2']))
-			&& !empty($password['password2'])
-			&& ($this->data[$this->alias]['password1'] === $password['password2'])) {
+		if ((isset($this->data[$this->alias]['password1']) && isset($password['password2'])) && !empty($password['password2']) && ($this->data[$this->alias]['password1'] === $password['password2'])) {
 			return true;
 		}
 		return false;
-	}  	
+	} 
+	 	
 //--------------------------------------------------------------------														
 	function equalCaptcha($data) {
 		//return true;
@@ -252,7 +252,8 @@ class User extends AppModel {
 	);
 */
 
-//--------------------------------------------------------------------	
+
+	
 	function beforeSave() {
         if ( !empty($this->data['User']['password1']) ) {
         	$this->data['User']['password'] = sha1( Configure::read('Security.salt').$this->data['User']['password1'] ); 
@@ -305,13 +306,13 @@ class User extends AppModel {
 		}
 		$postData[$this->alias]['active'] = 1;
 		
-		//must be in admin panel
-		$this->_removeExpiredRegistrations();
+		//must be in admin panel. We need new logic here;
+		//$this->_removeExpiredRegistrations();
 
 		$this->set($postData);
 		if ($this->validates()) {
 			App::import('Core', 'Security');
-			$postData[$this->alias]['password'] = Security::hash($postData[$this->alias]['password'], 'sha1', true);
+			$postData[$this->alias]['password'] = Security::hash($postData[$this->alias]['password1'], 'sha1', true);
 			$this->create();
 			return $this->save($postData, false);
 		}
@@ -333,6 +334,53 @@ class User extends AppModel {
 				}
 			}
 		}
+	}	
+
+/**
+ * Checks if an email is in the system, validated and if the user is active so that the user is allowed to reste his password
+ *
+ * @param array $postData post data from controller
+ * @return mixed False or user data as array on success
+ */
+	public function passwordReset($postData = array()) {
+		
+		$user = $this->find('first', array(
+																			'conditions' => array(
+																				$this->alias . '.active' => 1,
+																				$this->alias . '.email' => $postData[$this->alias]['email'])));
+
+		if (!empty($user) && $user[$this->alias]['email_authenticated'] == 1) {
+			$sixtyMins = time() + 43000;
+			$token = $this->generateToken();
+			$user[$this->alias]['password_token'] = $token;
+			$user[$this->alias]['email_token_expires'] = date('Y-m-d H:i:s', $sixtyMins);
+			$user = $this->save($user, false);
+			return $user;
+		} elseif (!empty($user) && $user[$this->alias]['email_authenticated'] == 0){
+			$this->invalidate('email', __d('users', 'This Email Address exists but was never validated.', true));
+		} else {
+			$this->invalidate('email', __d('users', 'This Email Address does not exist in the system.', true));
+		}
+		return false;
+	}
+	
+/**
+ * Checks the token for a password change
+ * 
+ * @param string $token Token
+ * @return mixed False or user data as array
+ */
+	public function checkPasswordToken($token = null) {
+		$user = $this->find('first', array(
+			'contain' => array(),
+			'conditions' => array(
+				$this->alias . '.active' => 1,
+				$this->alias . '.password_token' => $token,
+				$this->alias . '.email_token_expires >=' => date('Y-m-d H:i:s'))));
+		if (empty($user)) {
+			return false;
+		}
+		return $user;
 	}	
 /**
  * Generate token used by the user registration system
@@ -402,17 +450,17 @@ class User extends AppModel {
 	public function resetPassword($postData = array()) {
 		$result = false;
 		$tmp = $this->validate;
+		//validating only pass fields 
 		$this->validate = array(
-			'new_password' => $this->validate['password'],
-			'confirm_password' => array(
-				'required' => array(
-					'rule' => array('compareFields', 'new_password', 'confirm_password'), 
-					'message' => __d('users', 'The passwords are not equal.', true))));
+			'password1' => $this->validate['password1'],
+			'password2' => $this->validate['password2']
+		);
 
 		$this->set($postData);
+
 		if ($this->validates()) {
 			App::import('Core', 'Security');
-			$this->data[$this->alias]['passwd'] = Security::hash($this->data[$this->alias]['new_password'], null, true);
+			$this->data[$this->alias]['password'] = Security::hash($this->data[$this->alias]['password1'], null, true);
 			$this->data[$this->alias]['password_token'] = null;
 			$result = $this->save($this->data, false);
 		}
@@ -431,8 +479,10 @@ class User extends AppModel {
  */
 	protected function _removeExpiredRegistrations() {
 		$this->deleteAll(array(
-			$this->alias . '.email_authenticated' => 0,
-			$this->alias . '.email_token_expires <' => date('Y-m-d H:i:s')));
+														$this->alias . '.email_authenticated' => 0,
+														$this->alias . '.email_token_expires <' => date('Y-m-d H:i:s')
+													)
+										);
     }
 
 
