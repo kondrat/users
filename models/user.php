@@ -134,6 +134,8 @@ class User extends AppModel {
 
 																										 
 						  );
+		
+						  
 
 //--------------------------------------------------------------------
 	function betweenRus($data, $min, $max, $key) {
@@ -272,21 +274,7 @@ class User extends AppModel {
 		}
         return $userDataOutput;    
     }
-//--------------------------------------------------------------------
-    /**
-     * Creates an activation hash for the current user.
-     *      @param Void
-     *      @return String activation hash.
-    */
-    function getActivationHash() {
-    	if ( !isset($this->id) ) {
-   			return false;
- 		}
-  		return substr( Security::hash( Configure::read('Security.salt') . $this->field('created') . date('Ymd') ), 0, 8 );
-    }
-    
-    
-    
+
     
 //--------------------------------------------------------------------
 
@@ -312,7 +300,7 @@ class User extends AppModel {
 		$this->set($postData);
 		if ($this->validates()) {
 			App::import('Core', 'Security');
-			$postData[$this->alias]['password'] = Security::hash($postData[$this->alias]['password1'], 'sha1', true);
+			$postData[$this->alias]['password'] = Security::hash($postData[$this->alias]['password1'],null, true);
 			$this->create();
 			return $this->save($postData, false);
 		}
@@ -405,26 +393,6 @@ class User extends AppModel {
 
 
 /**
- * Generates a password
- *
- * @param int $length Password length
- * @return string
- */
-	public function generatePassword($length = 10) {
-		srand((double)microtime() * 1000000);
-		$password = '';
-		$vowels = array("a", "e", "i", "o", "u");
-		$cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r", "s", "t", "u", "v", "w", "tr",
-							"cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st", "sp", "sw", "pr", "sl", "cl");
-		for ($i = 0; $i < $length; $i++) {
-			$password .= $cons[mt_rand(0, 31)] . $vowels[mt_rand(0, 4)];
-		}
-		return substr($password, 0, $length);
-	}
-
-
-
-/**
  * Updates the last activity field of a user
  *
  * @param string $user User ID
@@ -467,6 +435,105 @@ class User extends AppModel {
 		$this->validate = $tmp;
 		return $result;
 	}
+
+
+/**
+ * Validates the user token
+ *
+ * @param string $token Token
+ * @param boolean $reset Reset boolean
+ * @param boolean $now time() value
+ * @return mixed false or user data
+ */
+	public function validateToken($token = null, $now = null) {
+		if (!$now) {
+			$now = time();
+		}
+
+		$this->recursive = -1;
+		$data = false;
+		$match = $this->find(array(
+			$this->alias . '.email_token' => $token),
+			'id, email, email_token_expires');
+
+		if (!empty($match)){
+			$expires = strtotime($match[$this->alias]['email_token_expires']);
+			if ($expires > $now) {
+				$data[$this->alias]['id'] = $match[$this->alias]['id'];
+				$data[$this->alias]['email'] = $match[$this->alias]['email'];
+				$data[$this->alias]['email_authenticated'] = '1';
+			
+				
+				$data[$this->alias]['email_token'] = null;
+				$data[$this->alias]['email_token_expires'] = null;
+			}
+		}
+		return $data;
+	}
+	
+/**
+ * Changes the password for a user
+ *
+ * @param array $postData Post data from controller
+ * @return boolean True on success
+ */
+	public function changePassword($postData = array()) {
+		$this->set($postData);
+		//$tmp = $this->validate;
+
+		//$this->validate = $this->validatePasswordChange;
+		//validating only pass fields 
+		$this->validate = array(
+			'password1' => $this->validate['password1'],
+			'password2' => $this->validate['password2'],
+			'old_password' => array(
+															'wrong' => array('rule' => 'validateOldPassword', 'required' => true, 'message' => __d('users', 'Invalid password.', true))
+															)
+		);
+		
+		if ($this->validates()) {
+			App::import('Core', 'Security');
+			$this->data[$this->alias]['password'] = Security::hash($this->data[$this->alias]['password1'], null, true);
+			$this->save($postData, array(
+				'validate' => false,
+				'callbacks' => false));
+			//$this->validate = $tmp;
+			return true;
+		}
+
+		//$this->validate = $tmp;
+		return false;
+	}
+
+/**
+ * Validation method to check the old password
+ *
+ * @param array $password 
+ * @return boolean True on success
+ */
+	public function validateOldPassword($password) {
+		if (!isset($this->data[$this->alias]['id']) || empty($this->data[$this->alias]['id'])) {
+			if (Configure::read('debug') > 0) {
+				throw new OutOfBoundsException(__d('users', '$this->data[\'' . $this->alias . '\'][\'id\'] has to be set and not empty', true));
+			}
+		}
+		$passwd = $this->field('password', array($this->alias . '.id' => $this->data[$this->alias]['id']));
+		App::import('Core', 'Security');
+		if ($passwd === Security::hash($password['old_password'], null, true)) {
+			return true;
+		}
+		return false;
+	}
+
+
+
+
+
+
+
+
+
+
 
 
 

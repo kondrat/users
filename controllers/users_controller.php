@@ -44,8 +44,8 @@ class UsersController extends AppController {
 
   			parent::beforeFilter();
         $this->Auth->allow(  
-        										'reg','logout','kcaptcha', 'reset_password', 'userNameCheck'
-        										//'index','view'
+        										'reg','logout','kcaptcha','verify','reset_password','userNameCheck','change_password'
+        										,'index','view','dashboard'
         										//'acoset','aroset','permset','buildAcl'
         										);         
         $this->Auth->autoRedirect = false;
@@ -224,10 +224,19 @@ class UsersController extends AppController {
 			$user = $this->User->register($this->data);
 			
 			if ( $user !== false ) {											
-				$a = $this->User->read();
-				$this->Auth->login($a);
-				$this->Session->setFlash(__d('users', 'Your account has been created. You should receive an e-mail shortly to authenticate your account.', true),'default', array('class' => 'flok'));
+				//$a = $this->User->read();
+				$this->Auth->login($user);
+				$this->Session->setFlash(__d('users', 'Your account has been created.', true),'default', array('class' => 'flok'));
 				$this->redirect('/',null,true);
+				
+				//verification email version
+				/*
+				$this->set('user', $user);
+				$this->_sendVerificationEmail($user[$this->modelClass]['email']);
+				$this->Session->setFlash(__d('users', 'Your account has been created. You should receive an e-mail shortly to authenticate your account. Once validated you will be able to login.', true),'default', array('class' => 'flok'));
+				$this->redirect(array('action'=> 'login'));
+				*/
+				
       } else {
       	
       	$errors = $this->User->invalidFields();
@@ -243,6 +252,72 @@ class UsersController extends AppController {
 		
 
 	}	
+
+/**
+ * Confirm email action
+ *
+ * @param string $type Type
+ * @return void
+ */
+	public function verify($type = 'email') {
+		if (isset($this->passedArgs['1'])){
+			$token = $this->passedArgs['1'];
+		} else {
+			$this->redirect(array('action' => 'login'), null, true);
+		}
+
+		if ($type === 'email') {
+			$data = $this->User->validateToken($token);
+		} else {
+			$this->Session->setFlash(__d('users', 'There url you accessed is not longer valid', true));
+			$this->redirect('/');
+		}
+
+		if ($data !== false) {
+			$email = $data[$this->modelClass]['email'];
+			unset($data[$this->modelClass]['email']);
+
+
+			if ($type === 'email') {
+				$data[$this->modelClass]['active'] = 1;
+			}
+
+			if ($this->User->save($data, false)) {
+
+					unset($data);
+					//$data[$this->modelClass]['active'] = 1;
+					//$this->User->save($data);
+					$this->Session->setFlash(__d('users', 'Your e-mail has been validated!', true));
+					$this->redirect(array('action' => 'login'));
+				
+			} else {
+				$this->Session->setFlash(__d('users', 'There was an error trying to validate your e-mail address. Please check your e-mail for the URL you should use to verify your e-mail address.', true));
+				$this->redirect('/');
+			}
+		} else {
+			$this->Session->setFlash(__d('users', 'The url you accessed is not longer valid', true));
+			$this->redirect('/');
+		}
+	}
+	
+
+/**
+ * Allows the user to enter a new password, it needs to be confirmed
+ *
+ * @return void
+ */
+	public function change_password() {
+		if (!empty($this->data)) {
+			//$this->data[$this->modelClass]['id'] = $this->Auth->user('id');
+			$user = $this->Auth->user();
+			if ($this->User->changePassword(Set::merge($user, $this->data))) {
+				$this->Session->setFlash(__d('users', 'Password changed.', true));
+				$this->redirect('/');
+			}
+		}
+	}
+
+
 
 /**
  * Common login action
@@ -403,7 +478,32 @@ class UsersController extends AppController {
 		$this->set('token', $token);
 	}	
 	
-	
+/**
+ * Sends the verification email
+ *
+ * This method is protected and not private so that classes that inherit this
+ * controller can override this method to change the varification mail sending
+ * in any possible way.
+ *
+ * @param string $to Receiver email address
+ * @param array $options EmailComponent options
+ * @return boolean Success
+ */
+	protected function _sendVerificationEmail($to = null, $options = array()) {
+		$defaults = array(
+			'from' => 'noreply@' . env('HTTP_HOST'),
+			'subject' => __d('users', 'Account verification', true),
+			'template' => 'account_verification');
+
+		$options = array_merge($defaults, $options);
+
+		$this->Email->to = $to;
+		$this->Email->from = $options['from'];
+		$this->Email->subject = $options['subject'];
+		$this->Email->template = $options['template'];
+
+		return $this->Email->send();
+	}	
 	    
 //--------------------------------------------------------------------	
 
@@ -415,11 +515,25 @@ class UsersController extends AppController {
  * Not done yet.
  */	
 
+
+
 	function index() {
 		$this->User->recursive = 0;
 		$this->set('users', $this->paginate());
 	}
 
+
+/**
+ * The homepage of a users giving him an overview about everything
+ *
+ * @return void
+ */
+	public function dashboard() {
+		$user = $this->User->read(null, $this->Auth->user('id'));
+		$this->set('user', $user);
+	}
+	
+	
 	function view($id = null) {
 		if (!$id) {
 			$this->Session->setFlash(__('Invalid user', true));

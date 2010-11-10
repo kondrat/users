@@ -18,10 +18,10 @@
 	echo $this->Form->input('old_password', array(
 		'label' => __d('users', 'Old Password', true),
 		'type' => 'password'));
-	echo $this->Form->input('new_password', array(
+	echo $this->Form->input('password1', array(
 		'label' => __d('users', 'New Password', true),
 		'type' => 'password'));
-	echo $this->Form->input('confirm_password', array(
+	echo $this->Form->input('password2', array(
 		'label' => __d('users', 'Confirm', true),
 		'type' => 'password'));
 	echo $this->Form->end(__d('users', 'Submit', true));
