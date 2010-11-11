@@ -220,6 +220,7 @@ class UsersController extends AppController {
 		if ( !empty($this->data) ) {
 			//prepering data from kcaptch component to check.			
 			$this->data['User']['captcha2'] = $this->Session->read('captcha');
+			$this->data['User']['group_id'] = '4cdbf51d-a8a8-4f5f-88c9-05cc9be3e0a3';
 
 			$user = $this->User->register($this->data);
 			
