@@ -21,7 +21,7 @@ class User extends AppModel {
 	public $actsAs = array('Containable',
 
 									    'SuperAuth.Acl' => array(
-									        'type' => 'requester',
+									        'type' => 'both',
 									        'parentClass'=> 'Group',
 									        'foreignKey' => 'group_id'
 									    ),
