@@ -30,6 +30,9 @@ class User extends AppModel {
 													'method' => 'multibyteSlug'
 											)
 	);
+	function parentNode() {
+		return 'Users';
+	}
 /**
  * Displayfield
  *
